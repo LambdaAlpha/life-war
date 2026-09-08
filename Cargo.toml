@@ -1,0 +1,20 @@
+[workspace]
+resolver = "3"
+members = ["core", "web"]
+
+[workspace.lints.rust]
+non_ascii_idents = "deny"
+unstable_features = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+must_use_candidate = "allow"
+
+[profile.dev]
+debug = false
+
+[profile.release]
+lto = true
+codegen-units = 1

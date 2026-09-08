@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131a">
+  <title>生命战争</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-glyph" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <h1>生命战争</h1>
+          <p>元胞策略对战</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="btn-rules" class="button button-ghost" type="button">规则</button>
+        <button id="btn-new" class="button button-ghost" type="button">新对局</button>
+        <button id="btn-undo" class="button button-ghost" type="button" disabled>悔棋</button>
+        <button id="btn-pass" class="button button-accent" type="button">停着</button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <aside class="left-panel">
+        <section class="panel phase-panel">
+          <div class="section-label">当前阶段</div>
+          <div class="phase-heading">
+            <span id="phase-index" class="phase-index">01</span>
+            <div>
+              <h2 id="phase-name">布局阶段</h2>
+              <p id="phase-hint">在己方半场或中线部署棋子</p>
+            </div>
+          </div>
+          <div id="turn-card" class="turn-card black-turn">
+            <span class="turn-stone"></span>
+            <div><small>当前行动</small><strong id="turn-name">黑方</strong></div>
+            <span class="turn-arrow">→</span>
+          </div>
+        </section>
+
+        <section class="panel population-panel">
+          <div class="section-label">细胞数量</div>
+          <div class="population-row">
+            <div class="population-name"><span class="mini-stone black"></span>黑方细胞</div>
+            <strong id="black-count">0</strong>
+          </div>
+          <div class="population-track"><span id="black-track"></span></div>
+          <div class="population-row white-row">
+            <div class="population-name"><span class="mini-stone white"></span>白方细胞</div>
+            <strong id="white-count">0</strong>
+          </div>
+          <div class="population-track white-track"><span id="white-track"></span></div>
+          <div class="metrics-grid">
+            <div><small>演化代数</small><strong id="generation">0</strong></div>
+            <div><small>连续停着</small><strong id="pass-count">0 / 2</strong></div>
+            <div><small>棋盘尺寸</small><strong id="board-size">15 × 15</strong></div>
+          </div>
+        </section>
+
+        <section id="color-panel" class="panel color-panel hidden">
+          <div class="section-label">投放颜色</div>
+          <h3>选择本回合投放的颜色</h3>
+          <div class="color-switch" role="group" aria-label="落子颜色">
+            <button id="color-black" class="color-choice active" data-color="black" type="button">
+              <span class="choice-stone black"></span>黑色
+            </button>
+            <button id="color-white" class="color-choice" data-color="white" type="button">
+              <span class="choice-stone white"></span>白色
+            </button>
+          </div>
+          <p>行动阶段可以投放任意颜色，随后全盘同步演化。</p>
+        </section>
+
+        <section class="panel quick-rule">
+          <div class="section-label">演化规则</div>
+          <div class="rule-equation"><span>有效邻居</span><strong>同色 − 异色</strong></div>
+          <div class="rule-pills"><span>2–3 存活</span><span>±3 诞生</span><span>其余死亡</span></div>
+        </section>
+      </aside>
+
+      <section class="board-area">
+        <div class="board-header">
+          <div>
+            <span id="board-kicker">布局区域</span>
+            <h2 id="board-title">建立你的初始生态</h2>
+          </div>
+          <div class="board-legend"><span><i class="legend-black"></i>黑</span><span><i class="legend-white"></i>白</span></div>
+        </div>
+        <div id="board-shell" class="board-shell">
+          <canvas id="board" aria-label="生命战争棋盘"></canvas>
+          <div id="result-banner" class="result-banner hidden">
+            <div class="result-symbol">◎</div>
+            <div><small>对局结束</small><strong id="result-title">黑方获胜</strong><p id="result-detail"></p></div>
+            <button id="btn-rematch" class="button button-accent" type="button">再来一局</button>
+          </div>
+        </div>
+        <div class="status-bar">
+          <span id="status-dot" class="status-dot"></span>
+          <p id="status" role="status" aria-live="polite">正在连接本地棋局…</p>
+          <span class="status-tip">点击空格落子</span>
+        </div>
+      </section>
+
+      <aside class="right-panel">
+        <div class="record-header">
+          <div><div class="section-label">对局记录</div><h2>行动记录</h2></div>
+          <span id="history-count" class="record-count">0</span>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="history-empty"><span>◇</span><p>第一步将在这里出现</p></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <section id="new-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="new-title">
+      <button class="modal-close" data-close-modal type="button" aria-label="关闭">×</button>
+      <div class="section-label">新对局</div>
+      <h2 id="new-title">创建新对局</h2>
+      <p>奇数尺寸保留一条双方都可部署的公共中线。</p>
+      <label class="field-label" for="setting-size">棋盘尺寸</label>
+      <select id="setting-size">
+        <option value="9">9 × 9 · 快速</option>
+        <option value="11">11 × 11</option>
+        <option value="13">13 × 13</option>
+        <option value="15" selected>15 × 15 · 推荐</option>
+        <option value="17">17 × 17</option>
+        <option value="19">19 × 19 · 大型</option>
+        <option value="21">21 × 21</option>
+      </select>
+      <div id="modal-error" class="modal-error"></div>
+      <div class="modal-actions">
+        <button class="button button-ghost" data-close-modal type="button">取消</button>
+        <button id="btn-create" class="button button-accent" type="button">开始布局</button>
+      </div>
+    </section>
+
+    <section id="rules-modal" class="modal rules-modal hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <button class="modal-close" data-close-modal type="button" aria-label="关闭">×</button>
+      <div class="section-label">玩法说明</div>
+      <h2 id="rules-title">两阶段生命战争</h2>
+      <div class="rules-list">
+        <div><span>01</span><p><strong>布局</strong> 黑白轮流在己方半场或公共中线放置己方细胞；双方连续停着后进入行动。</p></div>
+        <div><span>02</span><p><strong>行动</strong> 每回合先向空格投放一个任意颜色的细胞，然后全盘同步演化一代。</p></div>
+        <div><span>03</span><p><strong>演化</strong> 活细胞以“同色邻居数减异色邻居数”为有效邻居；有效值为 2 或 3 时存活。</p></div>
+        <div><span>04</span><p><strong>诞生</strong> 空格周围黑减白为 3 时诞生黑色，为 −3 时诞生白色。</p></div>
+        <div><span>05</span><p><strong>胜负</strong> 演化后无细胞的一方落败；双方同时归零则为和棋。</p></div>
+      </div>
+      <div class="modal-actions"><button class="button button-accent" data-close-modal type="button">明白了</button></div>
+    </section>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
